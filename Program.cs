@@ -11,7 +11,7 @@ namespace OBSCommand {
     class Program {
         private static OBSWebsocket _obs;
 
-        static void Main(string[] args) {
+        static int Main(string[] args) {
             string server = "ws://127.0.0.1:4444";
             string password = "";
             string profile = "";
@@ -32,8 +32,9 @@ namespace OBSCommand {
             bool showdate = false;
             string hashtag = "";
 
-            if (args.Length == 1) {
+            if (args.Length == 0) {
                 PrintUsage();
+                return 0;
             }
 
             foreach (string arg in args) {
@@ -87,7 +88,7 @@ namespace OBSCommand {
                         int seconds; int.TryParse(arrStopTime[1], out seconds);
                         runtime = new TimeSpan(0, 0, minutes, seconds, 0).TotalSeconds;
                     } else {
-                        int minutes; int.TryParse(arg, out minutes);
+                        int minutes; int.TryParse(strRuntime, out minutes);
                         runtime = new TimeSpan(0, 0, minutes, 0, 0).TotalSeconds;
                     }
                 }
@@ -220,9 +221,14 @@ namespace OBSCommand {
                     _obs.StartStreaming();
                     if (runtime > 0) {
                         Console.SetOut(myout);
-                        Console.WriteLine("Waiting for " + runtime.ToString() + " seconds to stop streaming");
+                        Console.WriteLine("Waiting " + (runtime / 60).ToString() + " minutes to stop streaming");
                         System.Threading.Thread.Sleep(TimeSpan.FromSeconds(runtime));
                         if (_obs.GetStreamingStatus().IsStreaming) {
+                            try {
+                                _obs.SetCurrentScene("Blank");
+                            } catch {
+                                //pass
+                            }
                             _obs.StopStreaming();
                         }
                     }
@@ -232,9 +238,11 @@ namespace OBSCommand {
                 Console.SetOut(myout);
                 Console.WriteLine("Ok");
 
+                return 1;
             } catch (Exception ex) {
                 Console.SetOut(myout);
                 Console.WriteLine("Error: " + ex.Message.ToString());
+                return 0;
             }
         }
         static void PrintUsage() {
@@ -271,6 +279,8 @@ namespace OBSCommand {
             output.Add("OBSCommand.exe /showsource=mysource");
             output.Add("OBSCommand.exe /hidesource=myscene/mysource");
             output.Add(@"OBSCommand.exe /showsource=""my scene""/""my source""");
+            output.Add(@"OBSCommand.exe /title=""my title"",true/false (add date to title),""optional hashtag""");
+            output.Add("OBSCommand.exe /runtime=minutes.seconds");
             output.Add(Environment.NewLine);
             output.Add("Options:");
             output.Add("--------");
@@ -295,6 +305,33 @@ namespace OBSCommand {
             output.Add("/stoprecording                    stops recording");
             output.Add("");
 
+            int i = 0;
+            int z = 0;
+
+            while (true)
+            {
+                Console.WriteLine(output[i]);
+                if (z == Console.WindowHeight - 6) {
+                    Console.Write("Press any key to continue...");
+                    Console.ReadKey();
+                    ClearCurrentConsoleLine();
+                    z = 0;
+                }
+                i += 1;
+                z += 1;
+                if (i >= output.Count) { break; }
+                if (output[i].Length > Console.WindowWidth) { z += 1; }
+                if (output[i].Length > Console.WindowWidth * 2) { z += 1; }
+            }
+
+
+        }
+
+        static void ClearCurrentConsoleLine() {
+            int currentLineCursor = Console.CursorTop;
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.Write(" " + Console.WindowWidth.ToString());
+            Console.SetCursorPosition(0, currentLineCursor);
         }
     }
 }

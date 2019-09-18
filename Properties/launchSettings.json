@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OBSCommand": {
+      "commandName": "Project",
+      "commandLineArgs": "/scene=\"Live Feed\"  /startstream /title=\"The Alex Jones Show\",true,#AlexJones /runtime=1.5"
+    }
+  }
+}

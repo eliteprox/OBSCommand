@@ -4,4 +4,4 @@ A Command Line Tool for Automating OBS and Title Changes in Restream.io with Int
 Example Usage:
 
 
-dotnet.exe "OBSCommand.dll" /scene="Live Feed" /startstreaming /runtime=239 /profile="KlowdTV" /title="The Alex Jones Show",true,#AlexJonesShow
+dotnet.exe "OBSCommand.dll" /scene="Live Feed" /startstreaming /runtime=239 /profile="ProfileName" /title="Title of the Show",true,#HashTagOrOtherText

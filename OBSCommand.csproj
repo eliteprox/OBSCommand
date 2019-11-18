@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,13 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="obs-websocket-dotnet" Version="4.2.0-beta3" />
+    <None Remove="SetStreamTitle.ahk" />
+    <None Remove="SetStreamTitle.exe" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="SetStreamTitle.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <PackageReference Include="obs-websocket-dotnet" Version="4.2.0-beta3" />
+    <PackageReference Include="Selenium.WebDriver" Version="3.141.0" />
   </ItemGroup>
 
 </Project>

@@ -7,6 +7,10 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using OpenQA.Selenium;
+using OpenQA.Selenium.Edge;
+using System.Globalization;
+
 namespace OBSCommand {
     class Program {
         private static OBSWebsocket _obs;
@@ -171,31 +175,18 @@ namespace OBSCommand {
                 }
 
                 if (title != "") {
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
-                    startInfo.CreateNoWindow = false;
-                    startInfo.UseShellExecute = false;
-                    startInfo.WorkingDirectory = Directory.GetCurrentDirectory();
-                    startInfo.FileName = "SetStreamTitle.exe";
-                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    string qt = ((char)34).ToString();
-                    string dbqt = qt + " " + qt;
-
-                    startInfo.Arguments = "/title=" + qt + title + qt;
+                    var driver = new EdgeDriver();
+                    driver.Url = "https://restream.io/titles";
                     if (showdate) {
-                        startInfo.Arguments += " /showdate";
+                        title = title + " | " + DateTime.Now.Date.ToString("D", CultureInfo.CreateSpecificCulture("en-US"));
                     }
                     if (hashtag != "") {
-                        startInfo.Arguments += " /hashtag=" + qt + hashtag + qt;
+                        title = title + " " + hashtag; 
                     }
-
-                    try {
-                        using (Process exeProcess = Process.Start(startInfo)) {
-                            exeProcess.WaitForExit();
-                        }
-                    } catch (Exception ex) {
-                        Console.SetOut(myout);
-                        Console.WriteLine("Error: " + ex.Message.ToString());
-                    }
+                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                    js.ExecuteScript("document.getElementById('jsAllTitlesInput').value = '" + title + "'");
+                    driver.FindElement(By.XPath("//input[@value='Update All']")).Click();
+                    driver.Quit();
                 }
 
                 if (stopstream) {

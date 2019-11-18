@@ -2,7 +2,7 @@
   "profiles": {
     "OBSCommand": {
       "commandName": "Project",
-      "commandLineArgs": "\"OBSCommand.dll\" /scene=\"Live Feed\" /startstreaming / /profile=\"KlowdTV\" /title=\"The War Room with Owen Shroyer\",true,#WarRoom"
+      "commandLineArgs": "\"OBSCommand.dll\" /scene=\"Live Feed\" /startstreaming /profile=\"KlowdTV\" /runtime=1 /title=\"The Alex Jones Show\",true,#AlexJones"
     }
   }
 }

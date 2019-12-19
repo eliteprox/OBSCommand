@@ -10,6 +10,7 @@ using System.Diagnostics;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Edge;
 using System.Globalization;
+using OpenQA.Selenium.Support.UI;
 
 namespace OBSCommand {
     class Program {
@@ -126,10 +127,41 @@ namespace OBSCommand {
                 TextWriter writer = new StringWriter(builder);
 
                 Console.SetOut(writer);
-
                 _obs = new OBSWebsocket();
                 _obs.WSTimeout = new TimeSpan(0, 0, 0, 3);
                 _obs.Connect(server, password);
+
+                if (title != "") {
+                    var driver = new EdgeDriver();
+                    driver.Url = "https://restream.io/titles";
+                    if (showdate) {
+                        title = title + " | " + DateTime.Now.Date.ToString("D", CultureInfo.CreateSpecificCulture("en-US"));
+                    }
+                    if (hashtag != "") {
+                        title = title + " " + hashtag;
+                    }
+                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                    js.ExecuteScript("document.getElementById('jsAllTitlesInput').value = '" + title + "'");
+                    driver.FindElement(By.XPath("//input[@value='Update All']")).Click();
+                    //Repeat the same for social alert
+                    //driver.Url = "https://restream.io/social-alerts";
+                    //js.ExecuteScript("document.getElementById('socialNetworksMessageInput').value = '" + title + "'");
+                    //driver.FindElementById("jsUpdateSocialNetworksMessageLink").Click();
+                    WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(1));
+                    Func<IWebDriver, IWebElement> waitForElement = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
+                    {
+                        Console.WriteLine("Waiting for update to save");
+                        IWebElement element = Web.FindElement(By.ClassName("app-title"));
+                        if (element.GetAttribute("class").Contains("app-title_state_success")) {
+                            return element;
+                        }
+                        return null;
+                    });
+                    IWebElement targetElement = wait.Until(waitForElement);
+
+                    driver.Quit();
+                }
+
                 if (profile != "") {
                     _obs.SetCurrentProfile(profile);
                 }
@@ -172,21 +204,6 @@ namespace OBSCommand {
 
                 if (unmute != "") {
                     _obs.SetMute(unmute, false);
-                }
-
-                if (title != "") {
-                    var driver = new EdgeDriver();
-                    driver.Url = "https://restream.io/titles";
-                    if (showdate) {
-                        title = title + " | " + DateTime.Now.Date.ToString("D", CultureInfo.CreateSpecificCulture("en-US"));
-                    }
-                    if (hashtag != "") {
-                        title = title + " " + hashtag; 
-                    }
-                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
-                    js.ExecuteScript("document.getElementById('jsAllTitlesInput').value = '" + title + "'");
-                    driver.FindElement(By.XPath("//input[@value='Update All']")).Click();
-                    driver.Quit();
                 }
 
                 if (stopstream) {

@@ -1,5 +1,5 @@
 # OBSCommand
-A Command Line Tool for Automating OBS and Title Changes in Restream.io with Internet Explorer
+A Command Line Tool for Automating OBS and Title Changes in Restream.io with Microsoft Edge
 
 Example Usage:
 

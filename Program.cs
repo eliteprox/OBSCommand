@@ -15,7 +15,6 @@ using OpenQA.Selenium.Support.UI;
 namespace OBSCommand {
     class Program {
         private static OBSWebsocket _obs;
-
         static int Main(string[] args) {
             string server = "ws://127.0.0.1:4444";
             string password = "";
@@ -25,6 +24,7 @@ namespace OBSCommand {
             string showsource = "";
             string toggleaudio = "";
             string mute = "";
+            string prescene = "";
             string unmute = "";
             //string setvolume = "";
             bool stopstream = false;
@@ -54,6 +54,9 @@ namespace OBSCommand {
                 }
                 if (arg.StartsWith("/scene=")) {
                     scene = arg.Replace("/scene=", "");
+                }
+                if (arg.StartsWith("/prescene=")) {
+                    prescene = arg.Replace("/prescene=", "");
                 }
                 if (arg.StartsWith("/hidesource=")) {
                     hidesource = arg.Replace("/hidesource=", "");
@@ -142,11 +145,24 @@ namespace OBSCommand {
                     }
                     IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
                     js.ExecuteScript("document.getElementById('jsAllTitlesInput').value = '" + title + "'");
+                    WebDriverWait wait1 = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+                    Func<IWebDriver, IWebElement> waitForElement1 = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
+                    {
+                        Console.WriteLine("Waiting for popup");
+                        IWebElement element = Web.FindElement(By.ClassName("bootbox-close-button"));
+                        if (element.GetAttribute("class").Contains("bootbox-close-button")) {
+                            return element;
+                        }
+                        return null;
+                    });
+
+                    IWebElement targetElement = wait1.Until(waitForElement1);
+                    if (targetElement != null) {
+                        targetElement.Click();
+
+                    }
+                    
                     driver.FindElement(By.XPath("//input[@value='Update All']")).Click();
-                    //Repeat the same for social alert
-                    //driver.Url = "https://restream.io/social-alerts";
-                    //js.ExecuteScript("document.getElementById('socialNetworksMessageInput').value = '" + title + "'");
-                    //driver.FindElementById("jsUpdateSocialNetworksMessageLink").Click();
                     WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(1));
                     Func<IWebDriver, IWebElement> waitForElement = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {
@@ -157,7 +173,7 @@ namespace OBSCommand {
                         }
                         return null;
                     });
-                    IWebElement targetElement = wait.Until(waitForElement);
+                    IWebElement targetElement2 = wait.Until(waitForElement);
 
                     driver.Quit();
                 }
@@ -340,6 +356,20 @@ namespace OBSCommand {
             Console.SetCursorPosition(0, Console.CursorTop);
             Console.Write(" " + Console.WindowWidth.ToString());
             Console.SetCursorPosition(0, currentLineCursor);
+        }
+
+        public void WaitForElement(IWebDriver webDriver, IWebElement element, int timeout = 5) {
+            WebDriverWait wait = new WebDriverWait(webDriver, TimeSpan.FromMinutes(timeout));
+            wait.IgnoreExceptionTypes(typeof(NoSuchElementException));
+            wait.IgnoreExceptionTypes(typeof(StaleElementReferenceException));
+            wait.Until<bool>(driver =>
+            {
+                try {
+                    return element.Displayed;
+                } catch (Exception) {
+                    return false;
+                }
+            });
         }
     }
 }

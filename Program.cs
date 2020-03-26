@@ -161,8 +161,8 @@ namespace OBSCommand {
                         targetElement.Click();
 
                     }
-                    
-                    driver.FindElement(By.XPath("//input[@value='Update All']")).Click();
+
+                    driver.FindElementByClassName("jsUpdateAllTitlesBtn").Click();
                     WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(1));
                     Func<IWebDriver, IWebElement> waitForElement = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {

@@ -34,6 +34,7 @@ namespace OBSCommand {
 
             double runtime = 0;
             string title = "";
+            string description = "";
             bool showdate = false;
             string hashtag = "";
 
@@ -100,6 +101,11 @@ namespace OBSCommand {
                         runtime = new TimeSpan(0, 0, minutes, 0, 0).TotalSeconds;
                     }
                 }
+
+                if (arg.StartsWith("/description=")) {
+                    description = arg.Replace("/description=", "");
+                }
+
                 if (arg.StartsWith("/title=")) {
                     if (arg.Contains(",")) {
                         string[] tmp = arg.Split(',');
@@ -134,42 +140,55 @@ namespace OBSCommand {
                 _obs.WSTimeout = new TimeSpan(0, 0, 0, 3);
                 _obs.Connect(server, password);
 
-                if (title != "") {
-                    var driver = new EdgeDriver();
-                    driver.Url = "https://restream.io/titles";
+                if (title != "" || description != "") {
                     if (showdate) {
                         title = title + " | " + DateTime.Now.Date.ToString("D", CultureInfo.CreateSpecificCulture("en-US"));
                     }
                     if (hashtag != "") {
                         title = title + " " + hashtag;
                     }
-                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
-                    js.ExecuteScript("document.getElementById('jsAllTitlesInput').value = '" + title + "'");
-                    WebDriverWait wait1 = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-                    Func<IWebDriver, IWebElement> waitForElement1 = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
+
+                    var driver = new EdgeDriver();
+                    driver.Url = "https://app.restream.io/titles";
+                    WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(1));
+
+                    Func<IWebDriver, IWebElement> waitForTitle = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {
-                        Console.WriteLine("Waiting for popup");
-                        IWebElement element = Web.FindElement(By.ClassName("bootbox-close-button"));
-                        if (element.GetAttribute("class").Contains("bootbox-close-button")) {
-                            return element;
+                        System.Collections.ObjectModel.ReadOnlyCollection<IWebElement> results = Web.FindElements(By.XPath("//input[@placeholder='Title']"));
+                        if (results.Count > 0) {
+                            return results[0];
                         }
                         return null;
                     });
+                    wait.Until(waitForTitle);
 
-                    IWebElement targetElement = wait1.Until(waitForElement1);
-                    if (targetElement != null) {
-                        targetElement.Click();
+                    IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
 
+                    //Set Title
+                    if (title.Trim().Length > 0) {
+                        string titleClassId = driver.FindElementByXPath("//input[@placeholder='Title']").GetAttribute("class");
+                        js.ExecuteScript(getReactJs(titleClassId, title));
                     }
 
-                    driver.FindElementByClassName("jsUpdateAllTitlesBtn").Click();
-                    WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(1));
+                    //Set Description
+                    if (description.Trim().Length > 0) {
+                        string descriptionClassId = driver.FindElementByXPath("//input[@placeholder='Description']").GetAttribute("class");
+                        js.ExecuteScript(getReactJs(descriptionClassId, description));
+                    }
+
+                    //Click the Update All button
+                    string submitClassId = driver.FindElementByXPath("//button/div[text() = 'Update All']").GetAttribute("class");
+                    js.ExecuteScript("document.getElementsByClassName('" + submitClassId + "')[0].click();");
+
+                    //Toastify__toast - container Toastify__toast - container--top - right
+                    //check for children
+
                     Func<IWebDriver, IWebElement> waitForElement = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {
                         Console.WriteLine("Waiting for update to save");
-                        IWebElement element = Web.FindElement(By.ClassName("app-title"));
-                        if (element.GetAttribute("class").Contains("app-title_state_success")) {
-                            return element;
+                        System.Collections.ObjectModel.ReadOnlyCollection<IWebElement> results = Web.FindElements(By.XPath("//*[contains(.,'Titles updated successfully')]"));
+                        if (results.Count > 0) {
+                            return results[0];
                         }
                         return null;
                     });
@@ -370,6 +389,22 @@ namespace OBSCommand {
                     return false;
                 }
             });
+        }
+
+        public static String getReactJs(string className, string settext) {
+            String injectJs = @"function setNativeValue(element, value) {
+                const valueSetter = Object.getOwnPropertyDescriptor(element, 'value').set;
+                const prototype = Object.getPrototypeOf(element);
+                const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value').set;
+
+                if (valueSetter && valueSetter !== prototypeValueSetter) {
+                    prototypeValueSetter.call(element, value);
+                } else {
+                    valueSetter.call(element, value);
+                }
+            }
+            setNativeValue(document.getElementsByClassName('" + className + "')[0], '" + settext + "'); document.getElementsByClassName('" + className + "')[0].dispatchEvent(new Event('input', { bubbles: true }));";
+            return injectJs;
         }
     }
 }

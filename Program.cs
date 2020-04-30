@@ -131,7 +131,6 @@ namespace OBSCommand {
 
             TextWriter myout = Console.Out;
             try {
-
                 StringBuilder builder = new StringBuilder();
                 TextWriter writer = new StringWriter(builder);
 
@@ -150,7 +149,7 @@ namespace OBSCommand {
 
                     var driver = new EdgeDriver();
                     driver.Url = "https://app.restream.io/titles";
-                    WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromMinutes(1));
+                    WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
 
                     Func<IWebDriver, IWebElement> waitForTitle = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {
@@ -176,13 +175,26 @@ namespace OBSCommand {
                         js.ExecuteScript(getReactJs(descriptionClassId, description));
                     }
 
-                    //Click the Update All button
+                    //Get the Update All button
                     string submitClassId = driver.FindElementByXPath("//button/div[text() = 'Update All']").GetAttribute("class");
+
+                    //Wait for the Update All button to be enabled...
+                    Func<IWebDriver, Boolean> waitForElement2 = new Func<IWebDriver, Boolean>((IWebDriver Web) =>
+                    {
+                        Console.WriteLine("Waiting for update to save");
+                        Boolean isDisabled = (Boolean)js.ExecuteScript("return document.getElementsByClassName('" + submitClassId + "')[0].hasAttribute('disabled');");
+                        //System.Collections.ObjectModel.ReadOnlyCollection<IWebElement> results = Web.FindElements(By.XPath("//*[contains(.,'Titles updated successfully')]"));
+                        if (isDisabled == false) {
+                            return true;
+                        }
+                        return false;
+                    });
+                    wait.Until(waitForElement2);
+
+                    //Click the Update All button
                     js.ExecuteScript("document.getElementsByClassName('" + submitClassId + "')[0].click();");
 
-                    //Toastify__toast - container Toastify__toast - container--top - right
-                    //check for children
-
+                    //Wait for the success notification to appear
                     Func<IWebDriver, IWebElement> waitForElement = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {
                         Console.WriteLine("Waiting for update to save");

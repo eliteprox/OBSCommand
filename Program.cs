@@ -11,6 +11,9 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Edge;
 using System.Globalization;
 using OpenQA.Selenium.Support.UI;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
+using System.Threading;
 
 namespace OBSCommand {
     class Program {
@@ -147,7 +150,11 @@ namespace OBSCommand {
                         title = title + " " + hashtag;
                     }
 
-                    var driver = new EdgeDriver();
+                    ChromeOptions options = new ChromeOptions();
+                    string ProfileFolder = @"C:\Users\elite\AppData\Local\Google\Chrome\User Data";
+                    options.AddArgument("--user-data-dir=" + ProfileFolder);
+                    ChromeDriver driver = new ChromeDriver(Environment.CurrentDirectory, options);
+
                     driver.Url = "https://app.restream.io/titles";
                     WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
 
@@ -190,6 +197,8 @@ namespace OBSCommand {
                         return false;
                     });
                     wait.Until(waitForElement2);
+
+                    Thread.Sleep(1000); //See if this cound be improved so this is no longer needed.
 
                     //Click the Update All button
                     js.ExecuteScript("document.getElementsByClassName('" + submitClassId + "')[0].click();");

@@ -14,6 +14,9 @@ using OpenQA.Selenium.Support.UI;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
 using System.Threading;
+using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Linq;
 
 namespace OBSCommand {
     class Program {
@@ -151,10 +154,10 @@ namespace OBSCommand {
                     }
 
                     ChromeOptions options = new ChromeOptions();
-                    string ProfileFolder = @"C:\Users\elite\AppData\Local\Google\Chrome\User Data";
+                    string localapp = Path.GetFullPath(Path.Combine(AppDataFolder(), @"..\"));
+                    string ProfileFolder = Path.Combine(localapp, @"Local\Google\Chrome\User Data");
                     options.AddArgument("--user-data-dir=" + ProfileFolder);
                     ChromeDriver driver = new ChromeDriver(Environment.CurrentDirectory, options);
-
                     driver.Url = "https://app.restream.io/titles";
                     WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
 
@@ -391,6 +394,7 @@ namespace OBSCommand {
 
         }
 
+
         static void ClearCurrentConsoleLine() {
             int currentLineCursor = Console.CursorTop;
             Console.SetCursorPosition(0, Console.CursorTop);
@@ -426,6 +430,18 @@ namespace OBSCommand {
             }
             setNativeValue(document.getElementsByClassName('" + className + "')[0], '" + settext + "'); document.getElementsByClassName('" + className + "')[0].dispatchEvent(new Event('input', { bubbles: true }));";
             return injectJs;
+        }
+        public static string AppDataFolder() {
+            var userPath = Environment.GetEnvironmentVariable(
+              RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+              "LOCALAPPDATA" : "Home");
+
+            var assy = System.Reflection.Assembly.GetEntryAssembly();
+            var companyName = assy.GetCustomAttributes<AssemblyCompanyAttribute>()
+              .FirstOrDefault();
+            var path = System.IO.Path.Combine(userPath, companyName.Company);
+
+            return path;
         }
     }
 }

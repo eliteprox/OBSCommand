@@ -1,22 +1,21 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using OBSWebsocketDotNet;
-using System.Collections;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Diagnostics;
-
-using OpenQA.Selenium;
-using OpenQA.Selenium.Edge;
 using System.Globalization;
-using OpenQA.Selenium.Support.UI;
-using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Firefox;
+using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq;
+using OBSWebsocketDotNet;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
+using OpenQA.Selenium.Chrome;
+
+using Tweetinvi;
+using Tweetinvi.Models;
+using Tweetinvi.Parameters;
+using Tweetinvi.Events;
 
 namespace OBSCommand {
     class Program {
@@ -37,6 +36,12 @@ namespace OBSCommand {
             bool startstream = false;
             bool startrecording = false;
             bool stoprecording = false;
+            string twitter_consumerkey = "";
+            string twitter_consumersecret = "";
+            string twitter_authkey = "";
+            string twitter_secret = "";
+            string channel_url = "";
+            bool tweet = false;
 
             double runtime = 0;
             string title = "";
@@ -108,6 +113,16 @@ namespace OBSCommand {
                     }
                 }
 
+                if (arg.StartsWith("/tweet=")) {
+                    String[] tokens = arg.Replace("/tweet=", "").Split(',');
+                    twitter_consumerkey = tokens[0];
+                    twitter_consumersecret = tokens[1];
+                    twitter_authkey = tokens[2];
+                    twitter_secret = tokens[3];
+                    channel_url = tokens[4];
+                    tweet = true;
+                }
+
                 if (arg.StartsWith("/description=")) {
                     description = arg.Replace("/description=", "");
                 }
@@ -144,6 +159,62 @@ namespace OBSCommand {
                 _obs = new OBSWebsocket();
                 _obs.WSTimeout = new TimeSpan(0, 0, 0, 3);
                 _obs.Connect(server, password);
+
+                if (profile != "") {
+                    _obs.SetCurrentProfile(profile);
+                }
+
+                if (scene != "") {
+                    _obs.SetCurrentScene(scene);
+                }
+
+                if (hidesource != "") {
+                    if (hidesource.Contains("/")) {
+                        string[] tmp = hidesource.Split("/");
+                        if (tmp.Length == 2) {
+                            // scene/source
+                            _obs.SetSourceRender(tmp[1], false, tmp[0]);
+                        }
+                    } else {
+                        _obs.SetSourceRender(hidesource, false);
+                    }
+                }
+
+                if (showsource != "") {
+                    if (showsource.Contains("/")) {
+                        string[] tmp = showsource.Split("/");
+                        if (tmp.Length == 2) {
+                            // scene/source
+                            _obs.SetSourceRender(tmp[1], false, tmp[0]);
+                        }
+                    } else {
+                        _obs.SetSourceRender(showsource, true);
+                    }
+                }
+
+                if (toggleaudio != "") {
+                    _obs.ToggleMute(toggleaudio);
+                }
+
+                if (mute != "") {
+                    _obs.SetMute(mute, true);
+                }
+
+                if (unmute != "") {
+                    _obs.SetMute(unmute, false);
+                }
+
+                if (stopstream) {
+                    _obs.StopStreaming();
+                }
+
+                if (startrecording) {
+                    _obs.StartRecording();
+                }
+
+                if (stoprecording) {
+                    _obs.StopRecording();
+                }
 
                 if (title != "" || description != "") {
                     if (showdate) {
@@ -218,88 +289,32 @@ namespace OBSCommand {
                     });
                     IWebElement targetElement2 = wait.Until(waitForElement);
 
+                    if (tweet && startstream) {
+                        StreamIt();
+                        Thread.Sleep(5000); //Wait for the connection to establish first
+                        driver.Url = channel_url;
+                        string TweetMsg = driver.Url.ToString();
+
+                        //Tweet this now
+                        Auth.SetUserCredentials(
+                        twitter_consumerkey,
+                        twitter_consumersecret,
+                        twitter_authkey,
+                        twitter_secret);
+
+                        if (TweetMsg != "") {
+                            Tweet.PublishTweet(title + " " + TweetMsg);
+                            Console.WriteLine("Published Tweet: " + title + " " + TweetMsg);
+                        }
+                    }
                     driver.Quit();
                 }
 
-                if (profile != "") {
-                    _obs.SetCurrentProfile(profile);
+                if (startstream && !tweet) {
+                    StreamIt();
                 }
 
-                if (scene != "") {
-                    _obs.SetCurrentScene(scene);
-                }
-
-                if (hidesource != "") {
-                    if (hidesource.Contains("/")) {
-                        string[] tmp = hidesource.Split("/");
-                        if (tmp.Length == 2) {
-                            // scene/source
-                            _obs.SetSourceRender(tmp[1], false, tmp[0]);
-                        }
-                    } else {
-                        _obs.SetSourceRender(hidesource, false);
-                    }
-                }
-
-                if (showsource != "") {
-                    if (showsource.Contains("/")) {
-                        string[] tmp = showsource.Split("/");
-                        if (tmp.Length == 2) {
-                            // scene/source
-                            _obs.SetSourceRender(tmp[1], false, tmp[0]);
-                        }
-                    } else {
-                        _obs.SetSourceRender(showsource, true);
-                    }
-                }
-
-                if (toggleaudio != "") {
-                    _obs.ToggleMute(toggleaudio);
-                }
-
-                if (mute != "") {
-                    _obs.SetMute(mute, true);
-                }
-
-                if (unmute != "") {
-                    _obs.SetMute(unmute, false);
-                }
-
-                if (stopstream) {
-                    _obs.StopStreaming();
-                }
-
-                if (startrecording) {
-                    _obs.StartRecording();
-                }
-
-                if (stoprecording) {
-                    _obs.StopRecording();
-                }
-
-                if (startstream) {
-                    var streamStatus = _obs.GetStreamingStatus();
-                    if (_obs.GetStreamingStatus().IsStreaming) {
-                        _obs.StopStreaming();
-                    }
-                    while (_obs.GetStreamingStatus().IsStreaming) {
-                        System.Threading.Thread.Sleep(1000);
-                    }
-                    _obs.StartStreaming();
-                    if (runtime > 0) {
-                        Console.SetOut(myout);
-                        Console.WriteLine("Waiting " + (runtime / 60).ToString() + " minutes to stop streaming");
-                        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(runtime));
-                        if (_obs.GetStreamingStatus().IsStreaming) {
-                            try {
-                                _obs.SetCurrentScene("Blank");
-                            } catch {
-                                //pass
-                            }
-                            _obs.StopStreaming();
-                        }
-                    }
-                }
+                WaitForStreamEnd(runtime, myout);
 
                 _obs.Disconnect();
                 Console.SetOut(myout);
@@ -312,6 +327,34 @@ namespace OBSCommand {
                 return 0;
             }
         }
+
+        static void StreamIt() {
+            var streamStatus = _obs.GetStreamingStatus();
+            if (_obs.GetStreamingStatus().IsStreaming) {
+                _obs.StopStreaming();
+            }
+            while (_obs.GetStreamingStatus().IsStreaming) {
+                System.Threading.Thread.Sleep(1000);
+            }
+            _obs.StartStreaming();
+        }
+
+        static void WaitForStreamEnd(double runtime, TextWriter myout) {
+            if (runtime > 0) {
+                Console.SetOut(myout);
+                Console.WriteLine("Waiting " + (runtime / 60).ToString() + " minutes to stop streaming");
+                System.Threading.Thread.Sleep(TimeSpan.FromSeconds(runtime));
+                if (_obs.GetStreamingStatus().IsStreaming) {
+                    try {
+                        _obs.SetCurrentScene("Blank");
+                    } catch {
+                        //pass
+                    }
+                    _obs.StopStreaming();
+                }
+            }
+        }
+
         static void PrintUsage() {
             List<string> output = new List<string>();
             output.Add("OBSCommand v1.3 ©2018 by FSC-SOFT (http://www.VoiceMacro.net);");

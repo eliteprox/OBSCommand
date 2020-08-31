@@ -16,6 +16,8 @@ using Tweetinvi;
 using Tweetinvi.Models;
 using Tweetinvi.Parameters;
 using Tweetinvi.Events;
+using System.Linq.Expressions;
+using Tweetinvi.Core.Extensions;
 
 namespace OBSCommand {
     class Program {
@@ -36,11 +38,12 @@ namespace OBSCommand {
             bool startstream = false;
             bool startrecording = false;
             bool stoprecording = false;
+            String[] twittertokens = null;
             string twitter_consumerkey = "";
             string twitter_consumersecret = "";
             string twitter_authkey = "";
             string twitter_secret = "";
-            string channel_url = "";
+            string channel_url = null;
             bool tweet = false;
 
             double runtime = 0;
@@ -114,13 +117,15 @@ namespace OBSCommand {
                 }
 
                 if (arg.StartsWith("/tweet=")) {
-                    String[] tokens = arg.Replace("/tweet=", "").Split(',');
-                    twitter_consumerkey = tokens[0];
-                    twitter_consumersecret = tokens[1];
-                    twitter_authkey = tokens[2];
-                    twitter_secret = tokens[3];
-                    channel_url = tokens[4];
-                    tweet = true;
+                    //Multi-token
+                    twittertokens = arg.Replace("/tweet=", "").Split('|');
+                    if (twittertokens.Count() > 0) {
+                        tweet = true;
+                    }
+                }
+
+                if (arg.StartsWith("/channelurl=")) {
+                    channel_url = arg.Replace("/channelurl=","");
                 }
 
                 if (arg.StartsWith("/description=")) {
@@ -289,22 +294,35 @@ namespace OBSCommand {
                     });
                     IWebElement targetElement2 = wait.Until(waitForElement);
 
-                    if (tweet && startstream) {
+                    if (tweet && startstream && channel_url != null) {
                         StreamIt();
                         Thread.Sleep(5000); //Wait for the connection to establish first
                         driver.Url = channel_url;
                         string TweetMsg = driver.Url.ToString();
 
-                        //Tweet this now
-                        Auth.SetUserCredentials(
-                        twitter_consumerkey,
-                        twitter_consumersecret,
-                        twitter_authkey,
-                        twitter_secret);
+                        foreach (string tokenset in twittertokens) {
+                            try {
+                                String[] tokens = tokenset.Replace("/tweet=", "").Split(',');
+                                twitter_consumerkey = tokens[0];
+                                twitter_consumersecret = tokens[1];
+                                twitter_authkey = tokens[2];
+                                twitter_secret = tokens[3];
 
-                        if (TweetMsg != "") {
-                            Tweet.PublishTweet(title + " " + TweetMsg);
-                            Console.WriteLine("Published Tweet: " + title + " " + TweetMsg);
+                                //Tweet this now
+                                Auth.SetUserCredentials(
+                                twitter_consumerkey,
+                                twitter_consumersecret,
+                                twitter_authkey,
+                                twitter_secret);
+
+                                if (TweetMsg != "") {
+                                    Tweet.PublishTweet(title + " " + TweetMsg);
+                                    Console.SetOut(myout);
+                                    Console.WriteLine("Published Tweet: " + title + " " + TweetMsg);
+                                }
+                            } catch (Exception e) {
+                                //ignore the error and proceed with any others
+                            }
                         }
                     }
                     driver.Quit();

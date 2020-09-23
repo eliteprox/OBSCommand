@@ -18,6 +18,7 @@ using Tweetinvi.Parameters;
 using Tweetinvi.Events;
 using System.Linq.Expressions;
 using Tweetinvi.Core.Extensions;
+using System.Web;
 
 namespace OBSCommand {
     class Program {
@@ -133,25 +134,14 @@ namespace OBSCommand {
                 }
 
                 if (arg.StartsWith("/title=")) {
-                    if (arg.Contains(",")) {
-                        string[] tmp = arg.Split(',');
-                        title = tmp[0].Replace("/title=", "");
-                        if (tmp.Length > 1) {
-                            bool.TryParse(tmp[1], out showdate);
-                        }
-                        if (tmp.Length > 2) {
-                            hashtag = tmp[2];
-                        }
-                    } else {
-                        title = arg.Replace("/title=", "");
-                    }
+                    title = arg.Replace("/title=", "");
+                }
 
-                    if (arg.StartsWith("/showdate")) {
-                        showdate = true;
-                    }
-                    if (arg.StartsWith("/hashtag")) {
-                        hashtag = arg.Replace("/hashtag=", "");
-                    }
+                if (arg.StartsWith("/showdate")) {
+                    showdate = true;
+                }
+                if (arg.StartsWith("/hashtag=")) {
+                    hashtag = arg.Replace("/hashtag=", "");
                 }
             }
 
@@ -164,38 +154,6 @@ namespace OBSCommand {
                 _obs = new OBSWebsocket();
                 _obs.WSTimeout = new TimeSpan(0, 0, 0, 3);
                 _obs.Connect(server, password);
-
-                if (profile != "") {
-                    _obs.SetCurrentProfile(profile);
-                }
-
-                if (scene != "") {
-                    _obs.SetCurrentScene(scene);
-                }
-
-                if (hidesource != "") {
-                    if (hidesource.Contains("/")) {
-                        string[] tmp = hidesource.Split("/");
-                        if (tmp.Length == 2) {
-                            // scene/source
-                            _obs.SetSourceRender(tmp[1], false, tmp[0]);
-                        }
-                    } else {
-                        _obs.SetSourceRender(hidesource, false);
-                    }
-                }
-
-                if (showsource != "") {
-                    if (showsource.Contains("/")) {
-                        string[] tmp = showsource.Split("/");
-                        if (tmp.Length == 2) {
-                            // scene/source
-                            _obs.SetSourceRender(tmp[1], false, tmp[0]);
-                        }
-                    } else {
-                        _obs.SetSourceRender(showsource, true);
-                    }
-                }
 
                 if (toggleaudio != "") {
                     _obs.ToggleMute(toggleaudio);
@@ -219,6 +177,10 @@ namespace OBSCommand {
 
                 if (stoprecording) {
                     _obs.StopRecording();
+                }
+
+                if (profile != "") {
+                    _obs.SetCurrentProfile(profile);
                 }
 
                 if (title != "" || description != "") {
@@ -295,11 +257,11 @@ namespace OBSCommand {
                     IWebElement targetElement2 = wait.Until(waitForElement);
 
                     if (tweet && startstream && channel_url != null) {
+                        PreStream(profile, scene, hidesource, showsource);
                         StreamIt();
-                        Thread.Sleep(5000); //Wait for the connection to establish first
+                        Thread.Sleep(7000); //Wait for the stream connection to establish first
                         driver.Url = channel_url;
                         string TweetMsg = driver.Url.ToString();
-
                         foreach (string tokenset in twittertokens) {
                             try {
                                 String[] tokens = tokenset.Replace("/tweet=", "").Split(',');
@@ -329,7 +291,10 @@ namespace OBSCommand {
                 }
 
                 if (startstream && !tweet) {
+                    PreStream(profile, scene, hidesource, showsource);
                     StreamIt();
+                } else {
+                    PreStream(profile, scene, hidesource, showsource);
                 }
 
                 WaitForStreamEnd(runtime, myout);
@@ -346,7 +311,42 @@ namespace OBSCommand {
             }
         }
 
+        static void PreStream(String profile, String scene, String hidesource, String showsource) {
+            if (profile != "") {
+                _obs.SetCurrentProfile(profile);
+            }
+
+            if (scene != "") {
+                _obs.SetCurrentScene(scene);
+            }
+
+            if (hidesource != "") {
+                if (hidesource.Contains("/")) {
+                    string[] tmp = hidesource.Split("/");
+                    if (tmp.Length == 2) {
+                        // scene/source
+                        _obs.SetSourceRender(tmp[1], false, tmp[0]);
+                    }
+                } else {
+                    _obs.SetSourceRender(hidesource, false);
+                }
+            }
+
+            if (showsource != "") {
+                if (showsource.Contains("/")) {
+                    string[] tmp = showsource.Split("/");
+                    if (tmp.Length == 2) {
+                        // scene/source
+                        _obs.SetSourceRender(tmp[1], false, tmp[0]);
+                    }
+                } else {
+                    _obs.SetSourceRender(showsource, true);
+                }
+            }
+        }
+
         static void StreamIt() {
+
             var streamStatus = _obs.GetStreamingStatus();
             if (_obs.GetStreamingStatus().IsStreaming) {
                 _obs.StopStreaming();
@@ -489,7 +489,7 @@ namespace OBSCommand {
                     valueSetter.call(element, value);
                 }
             }
-            setNativeValue(document.getElementsByClassName('" + className + "')[0], '" + settext + "'); document.getElementsByClassName('" + className + "')[0].dispatchEvent(new Event('input', { bubbles: true }));";
+            setNativeValue(document.getElementsByClassName('" + className + "')[0], '" + HttpUtility.JavaScriptStringEncode(settext) + "'); document.getElementsByClassName('" + className + "')[0].dispatchEvent(new Event('input', { bubbles: true }));";
             return injectJs;
         }
         public static string AppDataFolder() {

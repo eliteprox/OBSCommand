@@ -20,5 +20,6 @@ Supported Switches and Parameter Syntax
 /title= Automates Restream.io with Microsoft Edge. Must be already logged on. Format: "Title of the Show"
    
 /showdate For Title Only, If included the date will be appended to the title
+
 /hashtag= For Title Only, If included will append this text to the end of the title (including /showdate)
 

@@ -2,7 +2,7 @@
   "profiles": {
     "OBSCommand": {
       "commandName": "Project",
-      "commandLineArgs": "/tweet=\"CuWHYgetlAJ1eZcZnKzlFt7Ig,qeweYAQ7KsjPYbkRxth3wDpf4ZpT3qr6gOhUkD1cQ5A32pU7zj,791114183903358977-oKk0hNPE9BPpFmX5VEU21jJ8RAGDQSC,ev44E2BVTQ9il0HK5s7KrA62j09pvSECNLPOMpMK2iPmz|CuWHYgetlAJ1eZcZnKzlFt7Ig,qeweYAQ7KsjPYbkRxth3wDpf4ZpT3qr6gOhUkD1cQ5A32pU7zj,36028398-yOpSnh7LBpuVy1lNf924sNKR3LGU6hV3PcKqhdh28,lKeLCOESsY7CIGu0qbyaniPBZPbZ3RTnWplKpwK2Ny1iu\" /channelurl=\"https://restream.io/showChannel/3950433\" /scene=\"Special\" /startstreaming /profile=\"KlowdTV\" /runtime=185 /title=\"Is there a title?\" /showdate hashtag=\"#AmericaRising\""
+      "commandLineArgs": "/scene=\"Live Feed\" /startstreaming /runtime=239 /profile=\"KlowdTV\" /tweet=CuWHYgetlAJ1eZcZnKzlFt7Ig,qeweYAQ7KsjPYbkRxth3wDpf4ZpT3qr6gOhUkD1cQ5A32pU7zj,791114183903358977-oKk0hNPE9BPpFmX5VEU21jJ8RAGDQSC,ev44E2BVTQ9il0HK5s7KrA62j09pvSECNLPOMpMK2iPmz|CuWHYgetlAJ1eZcZnKzlFt7Ig,qeweYAQ7KsjPYbkRxth3wDpf4ZpT3qr6gOhUkD1cQ5A32pU7zj,36028398-yOpSnh7LBpuVy1lNf924sNKR3LGU6hV3PcKqhdh28,lKeLCOESsY7CIGu0qbyaniPBZPbZ3RTnWplKpwK2Ny1iu /channelurl=https://restream.io/showChannel/3950433 /title=\"The AJ Show\" /showdate /hashtag=\"#AmericaRising\""
     }
   }
 }

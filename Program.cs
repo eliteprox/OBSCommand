@@ -183,6 +183,12 @@ namespace OBSCommand {
                     _obs.SetCurrentProfile(profile);
                 }
 
+                ChromeOptions options = new ChromeOptions();
+                string localapp = Path.GetFullPath(Path.Combine(AppDataFolder(), @"..\"));
+                string ProfileFolder = Path.Combine(localapp, @"Local\Google\Chrome\User Data");
+                options.AddArgument("--user-data-dir=" + ProfileFolder);
+                ChromeDriver driver = new ChromeDriver(Environment.CurrentDirectory, options);
+
                 if (title != "" || description != "") {
                     if (showdate) {
                         title = title + " | " + DateTime.Now.Date.ToString("D", CultureInfo.CreateSpecificCulture("en-US"));
@@ -191,14 +197,8 @@ namespace OBSCommand {
                         title = title + " " + hashtag;
                     }
 
-                    ChromeOptions options = new ChromeOptions();
-                    string localapp = Path.GetFullPath(Path.Combine(AppDataFolder(), @"..\"));
-                    string ProfileFolder = Path.Combine(localapp, @"Local\Google\Chrome\User Data");
-                    options.AddArgument("--user-data-dir=" + ProfileFolder);
-                    ChromeDriver driver = new ChromeDriver(Environment.CurrentDirectory, options);
                     driver.Url = "https://app.restream.io/titles";
                     WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-
                     Func<IWebDriver, IWebElement> waitForTitle = new Func<IWebDriver, IWebElement>((IWebDriver Web) =>
                     {
                         System.Collections.ObjectModel.ReadOnlyCollection<IWebElement> results = Web.FindElements(By.XPath("//input[@placeholder='Title']"));
@@ -255,48 +255,47 @@ namespace OBSCommand {
                         return null;
                     });
                     IWebElement targetElement2 = wait.Until(waitForElement);
-
-                    if (tweet && startstream && channel_url != null) {
-                        PreStream(profile, scene, hidesource, showsource);
-                        StreamIt();
-                        Thread.Sleep(7000); //Wait for the stream connection to establish first
-                        driver.Url = channel_url;
-                        string TweetMsg = driver.Url.ToString();
-                        foreach (string tokenset in twittertokens) {
-                            try {
-                                String[] tokens = tokenset.Replace("/tweet=", "").Split(',');
-                                twitter_consumerkey = tokens[0];
-                                twitter_consumersecret = tokens[1];
-                                twitter_authkey = tokens[2];
-                                twitter_secret = tokens[3];
-
-                                //Tweet this now
-                                Auth.SetUserCredentials(
-                                twitter_consumerkey,
-                                twitter_consumersecret,
-                                twitter_authkey,
-                                twitter_secret);
-
-                                if (TweetMsg != "") {
-                                    Tweet.PublishTweet(title + " " + TweetMsg);
-                                    Console.SetOut(myout);
-                                    Console.WriteLine("Published Tweet: " + title + " " + TweetMsg);
-                                }
-                            } catch (Exception e) {
-                                //ignore the error and proceed with any others
-                            }
-                        }
-                    }
-                    driver.Quit();
                 }
 
-                if (startstream && !tweet) {
+                if (startstream) {
                     PreStream(profile, scene, hidesource, showsource);
                     StreamIt();
-                } else {
-                    PreStream(profile, scene, hidesource, showsource);
                 }
 
+                if (tweet && startstream && channel_url != null) {
+                    Thread.Sleep(7000); //Wait for the stream connection to establish first
+                    driver.Url = channel_url;
+                    string TweetMsg = driver.Url.ToString();
+                    foreach (string tokenset in twittertokens) {
+                        try {
+                            String[] tokens = tokenset.Replace("/tweet=", "").Split(',');
+                            twitter_consumerkey = tokens[0];
+                            twitter_consumersecret = tokens[1];
+                            twitter_authkey = tokens[2];
+                            twitter_secret = tokens[3];
+
+                            //Tweet this now
+                            Auth.SetUserCredentials(
+                            twitter_consumerkey,
+                            twitter_consumersecret,
+                            twitter_authkey,
+                            twitter_secret);
+
+                            if (TweetMsg != "") {
+                                Tweet.PublishTweet(title + " " + TweetMsg);
+                                Console.SetOut(myout);
+                                Console.WriteLine("Published Tweet: " + title + " " + TweetMsg);
+                            }
+                        } catch (Exception e) {
+                            //ignore the error and proceed with any others
+                        }
+                    }
+                }
+                try {
+                    driver.Quit();
+                } catch { }
+                
+                //Wait for stream to end
                 WaitForStreamEnd(runtime, myout);
 
                 _obs.Disconnect();

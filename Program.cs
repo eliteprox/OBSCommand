@@ -47,6 +47,8 @@ namespace OBSCommand {
             string channel_url = null;
             bool tweet = false;
 
+            string tweetmsg = "";
+
             double runtime = 0;
             string title = "";
             string description = "";
@@ -125,6 +127,10 @@ namespace OBSCommand {
                     }
                 }
 
+                if (arg.StartsWith("/msg=")) {
+                    tweetmsg = arg.Replace("/msg=", "");
+                }
+
                 if (arg.StartsWith("/channelurl=")) {
                     channel_url = arg.Replace("/channelurl=","");
                 }
@@ -183,6 +189,15 @@ namespace OBSCommand {
                     _obs.SetCurrentProfile(profile);
                 }
 
+                if (runtime > 0 && !startstream) {
+                    //Wait for stream to end
+                    WaitForStreamEnd(runtime, myout);
+                    _obs.Disconnect();
+                    Console.SetOut(myout);
+                    Console.WriteLine("Ok");
+                    return 0;
+                }
+
                 ChromeOptions options = new ChromeOptions();
                 string localapp = Path.GetFullPath(Path.Combine(AppDataFolder(), @"..\"));
                 string ProfileFolder = Path.Combine(localapp, @"Local\Google\Chrome\User Data");
@@ -219,7 +234,7 @@ namespace OBSCommand {
 
                     //Set Description
                     if (description.Trim().Length > 0) {
-                        string descriptionClassId = driver.FindElementByXPath("//input[@placeholder='Description']").GetAttribute("class");
+                        string descriptionClassId = driver.FindElementByXPath("//textarea[@placeholder='Description']").GetAttribute("class");
                         js.ExecuteScript(getReactJs(descriptionClassId, description));
                     }
 
@@ -258,12 +273,18 @@ namespace OBSCommand {
                 }
 
                 if (startstream) {
-                    PreStream(profile, scene, hidesource, showsource);
+                    setProfile(profile);
                     StreamIt();
+                    System.Threading.Thread.Sleep(1000); //This allows some time for connecting and starting the stream before starting video
+                    setSceneSources(scene, hidesource, showsource);
                 }
 
                 if (tweet && startstream && channel_url != null) {
-                    Thread.Sleep(7000); //Wait for the stream connection to establish first
+                    Thread.Sleep(11000); //Wait for the stream connection to establish first
+                    //if (channel_url.Contains("citizenmedia.news")) {
+                    //    channel_url = channel_url + "&title=" + HttpUtility.UrlEncode(title);
+                    //}
+                    
                     driver.Url = channel_url;
                     string TweetMsg = driver.Url.ToString();
                     foreach (string tokenset in twittertokens) {
@@ -295,6 +316,31 @@ namespace OBSCommand {
                     driver.Quit();
                 } catch { }
                 
+       
+                //if (tweetmsg != "" &  tweet && startstream) {
+                //    foreach (string tokenset in twittertokens) {
+                //        try {
+                //            String[] tokens = tokenset.Replace("/tweet=", "").Split(',');
+                //            twitter_consumerkey = tokens[0];
+                //            twitter_consumersecret = tokens[1];
+                //            twitter_authkey = tokens[2];
+                //            twitter_secret = tokens[3];
+
+                //            //Tweet this now
+                //            Auth.SetUserCredentials(
+                //            twitter_consumerkey,
+                //            twitter_consumersecret,
+                //            twitter_authkey,
+                //            twitter_secret);
+                //            Tweet.PublishTweet(title + " " + tweetmsg);
+                //            Console.SetOut(myout);
+                //            Console.WriteLine("Published Tweet: " + title + " " + tweetmsg);
+                //        } catch (Exception e) {
+                //            //ignore the error and proceed with any others
+                //        }
+                //    }
+                //}
+
                 //Wait for stream to end
                 WaitForStreamEnd(runtime, myout);
 
@@ -310,11 +356,13 @@ namespace OBSCommand {
             }
         }
 
-        static void PreStream(String profile, String scene, String hidesource, String showsource) {
+        static void setProfile(String profile) {
             if (profile != "") {
                 _obs.SetCurrentProfile(profile);
             }
+        }
 
+        static void setSceneSources(String scene, String hidesource, String showsource) {
             if (scene != "") {
                 _obs.SetCurrentScene(scene);
             }
